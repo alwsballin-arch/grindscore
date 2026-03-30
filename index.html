@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>GRINDSCORE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:    #0a0a0a;
+  --bg2:   #141414;
+  --bg3:   #1a1a1a;
+  --bg4:   #222;
+  --bg5:   #282828;
+  --line:  rgba(255,255,255,0.08);
+  --line2: rgba(255,255,255,0.14);
+  --line3: rgba(255,255,255,0.22);
+  --text:  #efefef;
+  --muted: #666;
+  --dim:   #3a3a3a;
+  --green: #00ff88;
+  --red:   #ff4545;
+  --yel:   #ffd000;
+  --blue:  #5b9cf6;
+  --mono:  'IBM Plex Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: var(--bg); color: var(--text); font-family: var(--mono);
+  min-height: 100vh; font-size: 13px; -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 980px; margin: 0 auto; padding: 28px 24px 120px; }
+
+/* ── TOP BAR ── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 18px; border-bottom: 1px solid var(--line2); margin-bottom: 26px;
+}
+.logo { font-size: 14px; font-weight: 600; letter-spacing: 0.22em; color: var(--text); }
+.logo em { color: var(--green); font-style: normal; }
+.logo-sub { font-size: 10px; color: var(--muted); letter-spacing: 0.12em; margin-top: 4px; }
+.clk { font-size: 11px; color: var(--muted); letter-spacing: 0.05em; text-align: right; line-height: 1.6; }
+
+/* ── STAT STRIP ── */
+.stat-strip {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 1px; background: var(--line2);
+  border: 1px solid var(--line2); border-radius: 8px; overflow: hidden; margin-bottom: 26px;
+}
+.sc { background: var(--bg2); padding: 14px 18px; }
+.sl { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 7px; }
+.sv { font-size: 22px; font-weight: 500; color: var(--text); transition: color .3s; }
+.sv.g { color: var(--green); } .sv.r { color: var(--red); } .sv.y { color: var(--yel); }
+
+/* ── TABS ── */
+.tabs { display: flex; border-bottom: 1px solid var(--line2); margin-bottom: 24px; }
+.tb {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  padding: 10px 20px; font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.12em; color: var(--muted); cursor: pointer;
+  margin-bottom: -1px; transition: color .2s, border-color .2s;
+}
+.tb:hover { color: var(--text); }
+.tb.on { color: var(--green); border-bottom-color: var(--green); }
+
+/* ── VIEW TRANSITIONS ── */
+.view { animation: viewIn .22s ease both; }
+@keyframes viewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── CALENDAR ── */
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.cal-mo { font-size: 11px; letter-spacing: 0.14em; color: var(--muted); }
+.cal-nav { display: flex; gap: 6px; }
+.cn {
+  background: var(--bg3); border: 1px solid var(--line2); border-radius: 5px;
+  width: 28px; height: 28px; cursor: pointer; color: var(--muted); font-family: var(--mono);
+  font-size: 13px; display: flex; align-items: center; justify-content: center;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.cn:hover { color: var(--text); border-color: var(--line3); background: var(--bg4); }
+.cn:active { transform: scale(.92); }
+
+.cal { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-bottom: 20px; }
+.dh { font-size: 10px; color: var(--dim); text-align: center; padding: 6px 0; letter-spacing: .1em; }
+.dc {
+  border-radius: 5px; border: 1px solid var(--line2); min-height: 58px; padding: 8px;
+  cursor: pointer; background: var(--bg2); transition: border-color .15s, background .15s, transform .1s;
+  position: relative;
+}
+.dc:hover { border-color: var(--line3); background: var(--bg3); }
+.dc:active { transform: scale(.97); }
+.dc.om { opacity: .15; pointer-events: none; }
+.dc.sel { border-color: var(--green) !important; border-width: 1.5px; }
+.dc.td { border-color: var(--line3); }
+.dc.plo { background: rgba(255,69,69,.09); }
+.dc.pmi { background: rgba(255,208,0,.08); }
+.dc.phi { background: rgba(0,255,136,.08); }
+.dc.pmx { background: rgba(0,255,136,.18); }
+.dn { font-size: 10px; color: var(--muted); }
+.dp { font-size: 13px; font-weight: 500; margin-top: 6px; }
+.cl { color: var(--muted); } .cr { color: var(--red); } .cy { color: var(--yel); } .cg { color: var(--green); }
+.bpip { position: absolute; top: 8px; right: 8px; width: 5px; height: 5px; border-radius: 50%; background: var(--yel); }
+
+/* ── DAY PANEL ── */
+.panel {
+  border: 1px solid var(--line2); border-radius: 10px; background: var(--bg2); overflow: hidden;
+}
+.ptop { display: flex; align-items: flex-start; justify-content: space-between; padding: 18px 20px 0; }
+.pd { font-size: 16px; font-weight: 500; letter-spacing: 0.05em; }
+.pdow { font-size: 10px; color: var(--muted); margin-top: 5px; letter-spacing: .1em; }
+.ppr { text-align: right; }
+.pbn { font-size: 36px; font-weight: 600; line-height: 1; color: var(--green); transition: color .3s; }
+.pbn.r { color: var(--red); } .pbn.y { color: var(--yel); }
+.psub { font-size: 10px; color: var(--muted); margin-top: 3px; letter-spacing: .1em; }
+.prog { height: 2px; background: var(--bg4); margin: 16px 20px 0; border-radius: 2px; overflow: hidden; }
+.pf { height: 100%; background: var(--green); transition: width .5s cubic-bezier(.4,0,.2,1), background .3s; border-radius: 2px; }
+.pf.r { background: var(--red); } .pf.y { background: var(--yel); }
+
+.slbl {
+  font-size: 10px; letter-spacing: .14em; color: var(--muted);
+  padding: 16px 20px 8px; display: flex; align-items: center; gap: 10px;
+}
+.slbl::after { content: ''; flex: 1; height: 1px; background: var(--line2); }
+
+.tlist { padding: 0 14px; }
+.trow {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 8px; border-radius: 5px; transition: background .12s;
+}
+.trow:hover { background: var(--bg3); }
+.chk {
+  width: 17px; height: 17px; border-radius: 4px; border: 1px solid var(--dim);
+  cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  transition: background .15s, border-color .15s, transform .1s;
+}
+.chk:hover { border-color: var(--green); }
+.chk:active { transform: scale(.85); }
+.chk.on { background: var(--green); border-color: var(--green); }
+.chk.on::after {
+  content: ''; width: 4px; height: 8px;
+  border: 1.5px solid #000; border-top: none; border-left: none;
+  transform: rotate(45deg) translateY(-1px); display: block;
+}
+.tn { flex: 1; font-size: 13px; color: var(--text); transition: color .2s; }
+.tn.done { text-decoration: line-through; color: var(--muted); }
+.tt { font-size: 10px; padding: 2px 8px; border-radius: 3px; letter-spacing: .05em; }
+.tw { background: rgba(91,156,246,.12); color: #6aaeff; }
+.th { background: rgba(0,255,136,.1); color: var(--green); }
+.tg { background: rgba(255,208,0,.1); color: var(--yel); }
+.dlt {
+  color: var(--dim); cursor: pointer; font-size: 16px; line-height: 1;
+  padding: 0 3px; transition: color .12s, transform .1s; opacity: 0;
+}
+.trow:hover .dlt { opacity: 1; }
+.dlt:hover { color: var(--red); }
+.dlt:active { transform: scale(.8); }
+.empty { font-size: 11px; color: var(--dim); padding: 10px 8px; font-style: italic; }
+
+/* ── ADD TASK BUTTON + DRAWER ── */
+.add-trigger-row {
+  display: flex; align-items: center; padding: 14px 20px;
+  border-top: 1px solid var(--line); margin-top: 6px;
+}
+.add-trigger-btn {
+  display: flex; align-items: center; gap: 10px;
+  background: none; border: 1px solid var(--line2); border-radius: 6px;
+  padding: 9px 14px; font-family: var(--mono); font-size: 12px;
+  color: var(--muted); cursor: pointer; width: 100%;
+  letter-spacing: .05em; transition: color .2s, border-color .2s, background .2s;
+}
+.add-trigger-btn:hover { color: var(--text); border-color: var(--line3); background: var(--bg3); }
+.add-trigger-btn.open { color: var(--green); border-color: rgba(0,255,136,.3); background: rgba(0,255,136,.04); }
+.atb-icon {
+  width: 18px; height: 18px; border-radius: 4px; border: 1px solid currentColor;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  font-size: 16px; line-height: 1; transition: transform .25s ease;
+}
+.add-trigger-btn.open .atb-icon { transform: rotate(45deg); }
+
+/* Drawer */
+.add-drawer {
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows .28s cubic-bezier(.4,0,.2,1);
+  background: var(--bg3); border-top: 0px solid var(--line);
+}
+.add-drawer.open {
+  grid-template-rows: 1fr;
+  border-top-width: 1px;
+}
+.add-drawer-inner { overflow: hidden; }
+.add-drawer-content { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 14px; }
+
+.drawer-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.drawer-input {
+  flex: 1; min-width: 180px;
+  background: var(--bg4); border: 1px solid var(--line2); border-radius: 6px;
+  padding: 9px 13px; font-family: var(--mono); font-size: 13px; color: var(--text);
+  outline: none; transition: border-color .15s, background .15s;
+}
+.drawer-input:focus { border-color: rgba(0,255,136,.4); background: var(--bg5); }
+.drawer-input::placeholder { color: var(--muted); }
+
+.drawer-selects { display: flex; gap: 8px; flex-wrap: wrap; }
+.drawer-select {
+  background: var(--bg4); border: 1px solid var(--line2); border-radius: 6px;
+  padding: 9px 12px; font-family: var(--mono); font-size: 12px; color: var(--text);
+  outline: none; cursor: pointer; transition: border-color .15s;
+  appearance: none; -webkit-appearance: none;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23555' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+}
+.drawer-select:focus { border-color: rgba(0,255,136,.4); }
+.drawer-select option { background: var(--bg3); }
+
+/* kind toggle pills */
+.kind-toggle { display: flex; gap: 0; border: 1px solid var(--line2); border-radius: 6px; overflow: hidden; }
+.kind-pill {
+  padding: 9px 14px; font-family: var(--mono); font-size: 11px; letter-spacing: .06em;
+  cursor: pointer; border: none; background: var(--bg4); color: var(--muted);
+  transition: color .15s, background .15s; flex: 1; text-align: center;
+}
+.kind-pill:first-child { border-right: 1px solid var(--line2); }
+.kind-pill.active-req { background: rgba(91,156,246,.1); color: #6aaeff; }
+.kind-pill.active-bon { background: rgba(255,208,0,.1); color: var(--yel); }
+
+.drawer-actions { display: flex; gap: 8px; align-items: center; }
+.drawer-submit {
+  background: var(--green); color: #000; border: none; border-radius: 6px;
+  padding: 9px 20px; font-family: var(--mono); font-size: 12px; font-weight: 600;
+  cursor: pointer; letter-spacing: .08em; transition: opacity .15s, transform .12s;
+}
+.drawer-submit:hover { opacity: .85; }
+.drawer-submit:active { transform: scale(.96); }
+.drawer-cancel {
+  background: none; border: 1px solid var(--line2); border-radius: 6px;
+  padding: 9px 14px; font-family: var(--mono); font-size: 12px; color: var(--muted);
+  cursor: pointer; transition: color .15s, border-color .15s;
+}
+.drawer-cancel:hover { color: var(--text); border-color: var(--line3); }
+
+/* ══════════════════════════════════════
+   TEMPLATES — sidebar layout
+══════════════════════════════════════ */
+.tpl-layout {
+  display: grid; grid-template-columns: 210px 1fr; gap: 0;
+  border: 1px solid var(--line2); border-radius: 10px; overflow: hidden; min-height: 440px;
+}
+.tpl-sidebar { background: var(--bg2); border-right: 1px solid var(--line2); }
+.tpl-sidebar-hd { padding: 14px 18px 10px; border-bottom: 1px solid var(--line2); font-size: 10px; letter-spacing: .14em; color: var(--muted); }
+.tpl-day-btn {
+  display: flex; align-items: center; justify-content: space-between; width: 100%;
+  background: none; border: none; padding: 12px 18px; cursor: pointer;
+  font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: left;
+  border-left: 2px solid transparent; transition: color .15s, background .15s, border-color .15s;
+}
+.tpl-day-btn:hover { background: var(--bg3); color: var(--text); }
+.tpl-day-btn.active { color: var(--green); background: var(--bg3); border-left-color: var(--green); }
+.tpl-day-count {
+  font-size: 10px; background: var(--bg4); border-radius: 4px;
+  padding: 2px 8px; color: var(--muted); min-width: 22px; text-align: center;
+  transition: background .15s, color .15s;
+}
+.tpl-day-btn.active .tpl-day-count { background: rgba(0,255,136,.12); color: var(--green); }
+
+.tpl-pane { background: var(--bg3); display: flex; flex-direction: column; }
+.tpl-pane-hd {
+  padding: 16px 20px 14px; border-bottom: 1px solid var(--line2);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.tpl-pane-title { font-size: 14px; font-weight: 500; color: var(--text); }
+.tpl-pane-sub { font-size: 10px; color: var(--muted); margin-top: 3px; letter-spacing: .05em; }
+.tpl-clear {
+  background: none; border: 1px solid var(--line2); border-radius: 5px;
+  padding: 5px 12px; font-family: var(--mono); font-size: 10px; color: var(--muted);
+  cursor: pointer; letter-spacing: .07em; transition: color .15s, border-color .15s;
+}
+.tpl-clear:hover { color: var(--red); border-color: rgba(255,69,69,.4); }
+
+.tpl-tasks { flex: 1; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
+.tpl-empty { font-size: 11px; color: var(--dim); padding: 24px 0; font-style: italic; }
+.tpl-task-row {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+  background: var(--bg2); border: 1px solid var(--line2); border-radius: 6px;
+  transition: border-color .15s;
+}
+.tpl-task-row:hover { border-color: var(--line3); }
+.tpl-task-name { flex: 1; font-size: 12px; color: var(--text); }
+.tpl-task-badges { display: flex; gap: 5px; align-items: center; }
+.tpl-kind-req { font-size: 10px; padding: 2px 7px; border-radius: 3px; background: rgba(91,156,246,.08); color: #6aaeff; }
+.tpl-kind-bon { font-size: 10px; padding: 2px 7px; border-radius: 3px; background: rgba(255,208,0,.09); color: var(--yel); }
+.tpl-del {
+  color: var(--dim); cursor: pointer; font-size: 16px; line-height: 1;
+  transition: color .12s, transform .1s; opacity: 0;
+}
+.tpl-task-row:hover .tpl-del { opacity: 1; }
+.tpl-del:hover { color: var(--red); }
+.tpl-del:active { transform: scale(.8); }
+
+/* Template add drawer — same pattern */
+.tpl-add-trigger {
+  display: flex; align-items: center; gap: 10px;
+  background: none; border: none; border-top: 1px solid var(--line2);
+  padding: 12px 20px; font-family: var(--mono); font-size: 12px;
+  color: var(--muted); cursor: pointer; width: 100%; text-align: left;
+  letter-spacing: .05em; transition: color .2s, background .2s;
+}
+.tpl-add-trigger:hover { color: var(--text); background: rgba(255,255,255,.03); }
+.tpl-add-trigger.open { color: var(--green); background: rgba(0,255,136,.03); }
+.tpl-atb-icon {
+  width: 18px; height: 18px; border-radius: 4px; border: 1px solid currentColor;
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+  line-height: 1; transition: transform .25s ease; flex-shrink: 0;
+}
+.tpl-add-trigger.open .tpl-atb-icon { transform: rotate(45deg); }
+
+.tpl-drawer {
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows .28s cubic-bezier(.4,0,.2,1);
+  background: var(--bg2); border-top: 0px solid var(--line);
+}
+.tpl-drawer.open { grid-template-rows: 1fr; border-top-width: 1px; }
+.tpl-drawer-inner { overflow: hidden; }
+.tpl-drawer-content { padding: 16px 20px 18px; display: flex; flex-direction: column; gap: 12px; }
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div>
+      <div class="logo">GRIND<em>SCORE</em></div>
+      <div class="logo-sub">PRODUCTIVITY AS PNL</div>
+    </div>
+    <div class="clk" id="clk"></div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stat-strip">
+    <div class="sc"><div class="sl">TODAY</div><div class="sv" id="s0">—</div></div>
+    <div class="sc"><div class="sl">AVG THIS MONTH</div><div class="sv" id="s1">—</div></div>
+    <div class="sc"><div class="sl">CURRENT STREAK</div><div class="sv g" id="s2">0 days</div></div>
+    <div class="sc"><div class="sl">BEST DAY</div><div class="sv g" id="s3">—</div></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tb on" onclick="swTab('t',this)">TRACKER</button>
+    <button class="tb" onclick="swTab('p',this)">TEMPLATES</button>
+  </div>
+
+  <!-- ── TRACKER VIEW ── -->
+  <div id="vt" class="view">
+    <div class="cal-head">
+      <div class="cal-mo" id="cmo"></div>
+      <div class="cal-nav">
+        <button class="cn" onclick="chMo(-1)">&#8592;</button>
+        <button class="cn" onclick="chMo(1)">&#8594;</button>
+      </div>
+    </div>
+    <div class="cal" id="cal">
+      <div class="dh">MON</div><div class="dh">TUE</div><div class="dh">WED</div>
+      <div class="dh">THU</div><div class="dh">FRI</div><div class="dh">SAT</div><div class="dh">SUN</div>
+    </div>
+
+    <div class="panel">
+      <div class="ptop">
+        <div><div class="pd" id="pd">—</div><div class="pdow" id="pdow"></div></div>
+        <div class="ppr"><div class="pbn" id="pbn">0%</div><div class="psub">COMPLETED</div></div>
+      </div>
+      <div class="prog"><div class="pf" id="pf" style="width:0%"></div></div>
+
+      <div class="slbl">REQUIRED</div>
+      <div class="tlist" id="rl"></div>
+      <div class="slbl">BONUS</div>
+      <div class="tlist" id="bl"></div>
+
+      <!-- ADD TRIGGER -->
+      <div class="add-trigger-row">
+        <button class="add-trigger-btn" id="add-trigger" onclick="toggleAddDrawer()">
+          <span class="atb-icon">+</span>
+          <span id="add-trigger-label">Add task</span>
+        </button>
+      </div>
+
+      <!-- ADD DRAWER -->
+      <div class="add-drawer" id="add-drawer">
+        <div class="add-drawer-inner">
+          <div class="add-drawer-content">
+            <div class="drawer-row">
+              <input class="drawer-input" type="text" id="nn" placeholder="Task name…" autocomplete="off"/>
+            </div>
+            <div class="drawer-row" style="gap:10px;align-items:stretch;">
+              <div class="drawer-selects">
+                <select class="drawer-select" id="nt">
+                  <option value="work">Work</option>
+                  <option value="health">Health</option>
+                  <option value="growth">Growth</option>
+                </select>
+              </div>
+              <div class="kind-toggle" id="kind-toggle">
+                <button class="kind-pill active-req" id="pill-req" onclick="setKind('required')">REQUIRED</button>
+                <button class="kind-pill" id="pill-bon" onclick="setKind('bonus')">BONUS</button>
+              </div>
+            </div>
+            <div class="drawer-actions">
+              <button class="drawer-submit" onclick="addTask()">ADD TASK</button>
+              <button class="drawer-cancel" onclick="toggleAddDrawer()">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TEMPLATES VIEW ── -->
+  <div id="vp" class="hidden">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:18px;letter-spacing:.02em;">
+      Template tasks are automatically added when you open a day for the first time.
+    </div>
+    <div class="tpl-layout">
+      <div class="tpl-sidebar">
+        <div class="tpl-sidebar-hd">DAY OF WEEK</div>
+        <div id="tpl-day-list"></div>
+      </div>
+      <div class="tpl-pane">
+        <div class="tpl-pane-hd">
+          <div>
+            <div class="tpl-pane-title" id="tpl-pane-title">Monday</div>
+            <div class="tpl-pane-sub" id="tpl-pane-sub">0 tasks configured</div>
+          </div>
+          <button class="tpl-clear" onclick="clearTplDay()">CLEAR ALL</button>
+        </div>
+        <div class="tpl-tasks" id="tpl-tasks"></div>
+
+        <!-- TPL ADD TRIGGER -->
+        <button class="tpl-add-trigger" id="tpl-add-trigger" onclick="toggleTplDrawer()">
+          <span class="tpl-atb-icon">+</span>
+          <span>Add task to this day</span>
+        </button>
+
+        <!-- TPL ADD DRAWER -->
+        <div class="tpl-drawer" id="tpl-drawer">
+          <div class="tpl-drawer-inner">
+            <div class="tpl-drawer-content">
+              <div class="drawer-row">
+                <input class="drawer-input" type="text" id="tni" placeholder="Task name…" autocomplete="off" onkeydown="if(event.key==='Enter')addTplTask()"/>
+              </div>
+              <div class="drawer-row" style="gap:10px;align-items:stretch;">
+                <select class="drawer-select" id="tty">
+                  <option value="work">Work</option>
+                  <option value="health">Health</option>
+                  <option value="growth">Growth</option>
+                </select>
+                <div class="kind-toggle">
+                  <button class="kind-pill active-req" id="tpl-pill-req" onclick="setTplKind('required')">REQUIRED</button>
+                  <button class="kind-pill" id="tpl-pill-bon" onclick="setTplKind('bonus')">BONUS</button>
+                </div>
+              </div>
+              <div class="drawer-actions">
+                <button class="drawer-submit" onclick="addTplTask()">ADD TASK</button>
+                <button class="drawer-cancel" onclick="toggleTplDrawer()">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+const MO=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DW=['MON','TUE','WED','THU','FRI','SAT','SUN'];
+const DWL=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const NOW=new Date();
+let vY=NOW.getFullYear(),vM=NOW.getMonth(),sel=dk(NOW);
+let activeTplDow=0;
+let addDrawerOpen=false, tplDrawerOpen=false;
+let selectedKind='required', selectedTplKind='required';
+
+function dk(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());}
+function p2(n){return String(n).padStart(2,'0');}
+
+/* ── STORAGE ── */
+function load(){
+  try{return{days:JSON.parse(localStorage.getItem('gs_d')||'{}'),tpl:JSON.parse(localStorage.getItem('gs_t')||'null')||defTpl()};}
+  catch(e){return{days:{},tpl:defTpl()};}
+}
+function save(){localStorage.setItem('gs_d',JSON.stringify(S.days));localStorage.setItem('gs_t',JSON.stringify(S.tpl));}
+function defTpl(){
+  const t={};
+  for(let i=0;i<7;i++)t[i]=[{name:'work on project',type:'work',kind:'required'},{name:'training',type:'health',kind:'required'}];
+  t[5]=[{name:'training',type:'health',kind:'required'}];
+  t[6]=[{name:'training',type:'health',kind:'required'}];
+  return t;
+}
+const S=load();
+
+function gd(k){if(!S.days[k])S.days[k]={tasks:[],ap:false};return S.days[k];}
+function apTpl(k){
+  const d=gd(k);if(d.ap)return;
+  const dt=new Date(k+'T12:00:00');let dow=dt.getDay();dow=dow===0?6:dow-1;
+  const tmpl=S.tpl[dow]||[];
+  const ex=new Set(d.tasks.map(t=>t.name+'|'+t.kind));
+  tmpl.forEach(t=>{if(!ex.has(t.name+'|'+t.kind))d.tasks.push({name:t.name,type:t.type,kind:t.kind,done:false});});
+  d.ap=true;save();
+}
+function pct(k){
+  const d=gd(k);const req=d.tasks.filter(t=>t.kind==='required');
+  if(!req.length)return null;
+  return{base:Math.round(req.filter(t=>t.done).length/req.length*100),bonus:d.tasks.filter(t=>t.kind==='bonus'&&t.done).length};
+}
+function bgc(p){if(!p||p.base===0)return'';if(p.base<40)return'plo';if(p.base<70)return'pmi';if(p.base<90)return'phi';return'pmx';}
+function cc(p){if(!p||p.base===0)return'cl';if(p.base<40)return'cr';if(p.base<70)return'cy';return'cg';}
+
+/* ── DRAWER TOGGLE ── */
+function toggleAddDrawer(){
+  addDrawerOpen=!addDrawerOpen;
+  const drawer=document.getElementById('add-drawer');
+  const btn=document.getElementById('add-trigger');
+  const lbl=document.getElementById('add-trigger-label');
+  drawer.classList.toggle('open',addDrawerOpen);
+  btn.classList.toggle('open',addDrawerOpen);
+  lbl.textContent=addDrawerOpen?'Close':'Add task';
+  if(addDrawerOpen)setTimeout(()=>document.getElementById('nn').focus(),280);
+}
+function setKind(k){
+  selectedKind=k;
+  document.getElementById('pill-req').className='kind-pill'+(k==='required'?' active-req':'');
+  document.getElementById('pill-bon').className='kind-pill'+(k==='bonus'?' active-bon':'');
+}
+function toggleTplDrawer(){
+  tplDrawerOpen=!tplDrawerOpen;
+  const drawer=document.getElementById('tpl-drawer');
+  const btn=document.getElementById('tpl-add-trigger');
+  drawer.classList.toggle('open',tplDrawerOpen);
+  btn.classList.toggle('open',tplDrawerOpen);
+  if(tplDrawerOpen)setTimeout(()=>document.getElementById('tni').focus(),280);
+}
+function setTplKind(k){
+  selectedTplKind=k;
+  document.getElementById('tpl-pill-req').className='kind-pill'+(k==='required'?' active-req':'');
+  document.getElementById('tpl-pill-bon').className='kind-pill'+(k==='bonus'?' active-bon':'');
+}
+
+/* ── CALENDAR ── */
+function renderCal(){
+  const cal=document.getElementById('cal');
+  const hh=Array.from(cal.querySelectorAll('.dh'));
+  cal.innerHTML='';hh.forEach(h=>cal.appendChild(h));
+  document.getElementById('cmo').textContent=MO[vM].toUpperCase()+' '+vY;
+  const first=new Date(vY,vM,1);let sd=first.getDay();sd=sd===0?6:sd-1;
+  const dim=new Date(vY,vM+1,0).getDate(),prev=new Date(vY,vM,0).getDate();
+  for(let i=0;i<sd;i++){const c=document.createElement('div');c.className='dc om';c.innerHTML='<div class="dn">'+(prev-sd+1+i)+'</div>';cal.appendChild(c);}
+  for(let d=1;d<=dim;d++){
+    const k=vY+'-'+p2(vM+1)+'-'+p2(d),p=pct(k),isT=k===dk(NOW);
+    const c=document.createElement('div');
+    c.className='dc '+bgc(p)+(k===sel?' sel':isT?' td':'');
+    let h='<div class="dn">'+(isT?'● ':'')+d+'</div>';
+    if(p&&p.base>0)h+='<div class="dp '+cc(p)+'">'+p.base+'%</div>';
+    if(p&&p.bonus>0)h+='<div class="bpip"></div>';
+    c.innerHTML=h;c.onclick=()=>selD(k);cal.appendChild(c);
+  }
+  updStats();
+}
+function selD(k){sel=k;apTpl(k);renderCal();renderPanel();}
+
+/* ── DAY PANEL ── */
+function renderPanel(){
+  const d=gd(sel),p=pct(sel),base=p?p.base:0;
+  const isT=sel===dk(NOW);
+  const dt=new Date(sel+'T12:00:00');let dow=dt.getDay();dow=dow===0?6:dow-1;
+  document.getElementById('pd').textContent=isT?'TODAY':sel.split('-').reverse().join('.');
+  document.getElementById('pdow').textContent=DWL[dow].toUpperCase();
+  const pb=document.getElementById('pbn');
+  pb.textContent=base+'%';pb.className='pbn'+(base>0&&base<40?' r':base>=40&&base<70?' y':'');
+  const pf=document.getElementById('pf');
+  pf.style.width=base+'%';pf.className='pf'+(base>0&&base<40?' r':base>=40&&base<70?' y':'');
+  renderTG('rl',d.tasks.filter(t=>t.kind==='required'),d.tasks);
+  renderTG('bl',d.tasks.filter(t=>t.kind==='bonus'),d.tasks);
+}
+function renderTG(id,tasks,all){
+  const el=document.getElementById(id);el.innerHTML='';
+  if(!tasks.length){el.innerHTML='<div class="empty">// no tasks</div>';return;}
+  tasks.forEach(t=>{
+    const idx=all.indexOf(t),row=document.createElement('div');row.className='trow';
+    const tc={work:'tw',health:'th',growth:'tg'}[t.type];
+    const tl={work:'WORK',health:'HEALTH',growth:'GROWTH'}[t.type];
+    row.innerHTML=`<div class="chk ${t.done?'on':''}" onclick="tog(${idx})"></div><span class="tn ${t.done?'done':''}">${t.name}</span><span class="tt ${tc}">${tl}</span><span class="dlt" onclick="delT(${idx})">×</span>`;
+    el.appendChild(row);
+  });
+}
+function tog(i){const d=gd(sel);d.tasks[i].done=!d.tasks[i].done;save();renderCal();renderPanel();}
+function delT(i){const d=gd(sel);d.tasks.splice(i,1);save();renderCal();renderPanel();}
+function addTask(){
+  const name=document.getElementById('nn').value.trim();if(!name)return;
+  gd(sel).tasks.push({name,type:document.getElementById('nt').value,kind:selectedKind,done:false});
+  document.getElementById('nn').value='';
+  save();renderCal();renderPanel();
+  toggleAddDrawer();
+}
+
+/* ── STATS ── */
+function updStats(){
+  const tp=pct(dk(NOW)),b=tp?tp.base:null;
+  const el=document.getElementById('s0');
+  el.textContent=b!==null?b+'%':'—';el.className='sv'+(b>=70?' g':b!==null&&b<40?' r':b!==null?' y':'');
+  let tot=0,cnt=0,best=0,dim=new Date(vY,vM+1,0).getDate();
+  for(let d=1;d<=dim;d++){const p=pct(vY+'-'+p2(vM+1)+'-'+p2(d));if(p!==null){tot+=p.base;cnt++;if(p.base>best)best=p.base;}}
+  document.getElementById('s1').textContent=cnt?Math.round(tot/cnt)+'%':'—';
+  document.getElementById('s3').textContent=best?best+'%':'—';
+  let streak=0;const cd=new Date(NOW);
+  for(let i=0;i<365;i++){const p=pct(dk(cd));if(!p||p.base<50)break;streak++;cd.setDate(cd.getDate()-1);}
+  document.getElementById('s2').textContent=streak+' day'+(streak!==1?'s':'');
+}
+
+/* ── TEMPLATES ── */
+function renderTplSidebar(){
+  const list=document.getElementById('tpl-day-list');list.innerHTML='';
+  for(let dow=0;dow<7;dow++){
+    const cnt=(S.tpl[dow]||[]).length;
+    const btn=document.createElement('button');
+    btn.className='tpl-day-btn'+(dow===activeTplDow?' active':'');
+    btn.innerHTML=`<span>${DWL[dow]}</span><span class="tpl-day-count">${cnt}</span>`;
+    btn.onclick=()=>{
+      activeTplDow=dow;
+      if(tplDrawerOpen)toggleTplDrawer();
+      renderTplSidebar();renderTplPane();
+    };
+    list.appendChild(btn);
+  }
+}
+function renderTplPane(){
+  const tasks=S.tpl[activeTplDow]||[];
+  document.getElementById('tpl-pane-title').textContent=DWL[activeTplDow];
+  document.getElementById('tpl-pane-sub').textContent=tasks.length+' task'+(tasks.length!==1?'s':'')+' configured';
+  const el=document.getElementById('tpl-tasks');el.innerHTML='';
+  if(!tasks.length){
+    el.innerHTML='<div class="tpl-empty">// no tasks for this day</div>';return;
+  }
+  tasks.forEach((t,i)=>{
+    const row=document.createElement('div');row.className='tpl-task-row';
+    const tc={work:'tw',health:'th',growth:'tg'}[t.type];
+    const tl={work:'WORK',health:'HEALTH',growth:'GROWTH'}[t.type];
+    const kCls=t.kind==='bonus'?'tpl-kind-bon':'tpl-kind-req';
+    const kLbl=t.kind==='bonus'?'BONUS':'REQUIRED';
+    row.innerHTML=`<span class="tpl-task-name">${t.name}</span>
+      <div class="tpl-task-badges"><span class="tt ${tc}">${tl}</span><span class="${kCls}">${kLbl}</span></div>
+      <span class="tpl-del" onclick="delTplTask(${i})">×</span>`;
+    el.appendChild(row);
+  });
+}
+function renderTpl(){renderTplSidebar();renderTplPane();}
+function addTplTask(){
+  const name=document.getElementById('tni').value.trim();if(!name)return;
+  if(!S.tpl[activeTplDow])S.tpl[activeTplDow]=[];
+  S.tpl[activeTplDow].push({name,type:document.getElementById('tty').value,kind:selectedTplKind});
+  document.getElementById('tni').value='';
+  save();renderTplSidebar();renderTplPane();
+  toggleTplDrawer();
+}
+function delTplTask(i){S.tpl[activeTplDow].splice(i,1);save();renderTplSidebar();renderTplPane();}
+function clearTplDay(){if(!(S.tpl[activeTplDow]||[]).length)return;S.tpl[activeTplDow]=[];save();renderTplSidebar();renderTplPane();}
+
+/* ── TAB SWITCH ── */
+function swTab(v,btn){
+  document.querySelectorAll('.tb').forEach(t=>t.classList.remove('on'));btn.classList.add('on');
+  const vt=document.getElementById('vt'),vp=document.getElementById('vp');
+  if(v==='t'){
+    vp.classList.add('hidden');
+    vt.classList.remove('hidden');
+    vt.classList.remove('view');void vt.offsetWidth;vt.classList.add('view');
+  } else {
+    vt.classList.add('hidden');
+    vp.classList.remove('hidden');
+    vp.classList.remove('view');void vp.offsetWidth;vp.classList.add('view');
+    renderTpl();
+  }
+}
+function chMo(d){vM+=d;if(vM<0){vM=11;vY--;}if(vM>11){vM=0;vY++;}renderCal();}
+
+/* ── CLOCK ── */
+function tick(){
+  const n=new Date();
+  document.getElementById('clk').textContent=
+    MO[n.getMonth()].toUpperCase()+' '+p2(n.getDate())+', '+n.getFullYear()+'\n'+
+    p2(n.getHours())+':'+p2(n.getMinutes())+':'+p2(n.getSeconds());
+}
+tick();setInterval(tick,1000);
+
+document.getElementById('nn').addEventListener('keydown',e=>{if(e.key==='Enter')addTask();if(e.key==='Escape')toggleAddDrawer();});
+
+apTpl(sel);renderCal();renderPanel();
+</script>
+</body>
+</html>
